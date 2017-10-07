@@ -10,19 +10,19 @@ class Word(object):
         self._sentences = sentences
         self._property = priority
 
-    @property.getter
+    @property
     def name(self):
         return self._name
 
-    @property.getter
+    @property
     def chinese(self):
         return self._chinese
 
-    @property.getter
+    @property
     def sentences(self):
         return self._sentences
 
-    @property.getter
+    @property
     def priority(self):
         return self._property
 

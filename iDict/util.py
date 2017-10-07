@@ -4,9 +4,10 @@ util tools for word
 import os
 import sys
 import sqlite3
-from iDict.word import  Word
+import logging
+from iDict.word import Word
 CREATE_TABLE_WORD = '''
-CREATE TABLE IF NOT EXIST Word
+CREATE TABLE IF NOT EXISTS Word
 (
 name        TEXT PRIMARY KEY,
 chinese     TEXT,
@@ -19,11 +20,12 @@ DEFAULT_PATH = os.path.join(os.path.expanduser('~'), '.iDict')
 
 
 def _database_exist():
-    return not os.path.exists(os.path.join(DEFAULT_PATH, 'word.db'))
+    return os.path.exists(os.path.join(DEFAULT_PATH, 'word.db'))
 
 
 def _create_database():
-    if _database_exist():
+    if not _database_exist():
+        logging.info('create database')
         os.mkdir(DEFAULT_PATH)
         conn = sqlite3.connect(os.path.join(DEFAULT_PATH, 'word.db'))
         curs = conn.cursor()
@@ -41,10 +43,10 @@ def insert_word(word):
     res = curs.fetchall()
     if res:
         print(word, 'has existed')
-        sys.exit()
+        return
     try:
         curs.execute('INSERT INTO Word(name, chinese, sentences, priority) values ("%s", "%s", "%s", "%s")'
-                     % word.name, word.chinese, word.sentences, word.priority)
+                     % (word.name, word.chinese, word.sentences, word.priority))
     except Exception as err:
         print('Cannot insert %s' % word.name)
         raise err
@@ -64,6 +66,6 @@ def query_word(name):
         if res:
             return Word(res[0], res[1], res[2], res[3])
         else:
-            print('word does not exist')
+            print('Word does not exist')
     else:
-        print('database does not exist')
+        print('Database does not exist')

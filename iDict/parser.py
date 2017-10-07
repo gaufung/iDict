@@ -3,7 +3,7 @@ parse a word to word object
 """
 import os
 from bs4 import BeautifulSoup
-from iDict import word
+from iDict.word import Word
 
 
 class ParserError(Exception):
@@ -19,9 +19,8 @@ class Parser(object):
 
 
 class DbParser(Parser):
-    def __init__(self, engine, successor=None):
+    def __init__(self, successor=None):
         self.successor = successor
-        self.engine = engine
 
     def parse(self, text):
         try:
@@ -33,13 +32,34 @@ class DbParser(Parser):
 
 
 class BingParser(Parser):
-    def __init__(self, url='http://cn.bing.com/dict/search?q={%s}', successor=None):
+
+    url = 'http://cn.bing.com/dict/search?q={%s}'
+
+    def __init__(self, successor=None):
         self.successor = successor
-        self.url = url
+
+    def _parse(self, text):
+        soup = BeautifulSoup(open('search?q=%s' % text, encoding='utf-8'), 'lxml')
+        definition_tags = soup.find_all(class_='def')
+        chinese = []
+        for tag in definition_tags:
+            chinese.append(tag.string)
+        sentence_tags = soup.find_all(class_='sen_en')
+        sentences = []
+        for tag in sentence_tags:
+            words = []
+            for child in tag.children:
+                words.append(child.string)
+            sentences.append(''.join(words))
+        return Word(text, ''.join(chinese), ''.join(sentences))
 
     def parse(self, text):
         try:
-            pass
+            query_url = self.url % text
+            os.system('curl -O %s' % query_url)
+            word = self._parse(text)
+            os.remove('search?q=%s' % text)
+            return word
         except ParserError:
             if self.successor is None:
                 raise Exception('Having no handler')
@@ -49,16 +69,9 @@ class BingParser(Parser):
             raise err
 
 
+
 def lookup(handler):
     def _parse(text):
         return handler.parse(text)
     return _parse
 
-
-def _parse_bing_dict(url):
-    """
-    parse word from bing dict
-    :param url: the get url from bing: http://cn.bing.com/dict/search?q={word}
-    :return: the word's object
-    """
-    pass
