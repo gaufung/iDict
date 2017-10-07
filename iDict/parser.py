@@ -1,6 +1,9 @@
 """
 parse a word to word object
 """
+import os
+from bs4 import BeautifulSoup
+from iDict import word
 
 
 class ParserError(Exception):
@@ -16,21 +19,23 @@ class Parser(object):
 
 
 class DbParser(Parser):
-    def __init__(self, successor):
+    def __init__(self, engine, successor=None):
         self.successor = successor
+        self.engine = engine
 
     def parse(self, text):
         try:
             pass
         except ParserError:
             self.successor.parse(text)
-        except Exception:
-            raise
+        except Exception as err:
+            raise err
 
 
 class BingParser(Parser):
-    def __init__(self, successor=None):
+    def __init__(self, url='http://cn.bing.com/dict/search?q={%s}', successor=None):
         self.successor = successor
+        self.url = url
 
     def parse(self, text):
         try:
@@ -40,8 +45,8 @@ class BingParser(Parser):
                 raise Exception('Having no handler')
             else:
                 self.successor.parse(text)
-        except Exception:
-            raise
+        except Exception as err:
+            raise err
 
 
 def lookup(handler):
