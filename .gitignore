@@ -1,3 +1,6 @@
 *.pyc
 .idea/
 mange.py
+build/
+dist/
+iDict.egg-info

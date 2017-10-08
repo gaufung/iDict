@@ -25,13 +25,15 @@ def display(word):
         print(colored("*", color='red'), colored(sentence.content, color='green'))
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 
 def main():
     parser = argparse.ArgumentParser(description="iDict")
-    parser.add_argument(dest='word',
+    parser.add_argument('-w', dest='word',
                         help='the word which you want to look up')
+    parser.add_argument('-p', '--priority', dest='priority',
+                        action='store', help='set word priority')
     args = parser.parse_args(sys.argv[1:])
     con = config['production']
     engine = create_engine(con.DATABASE_URL)
@@ -39,22 +41,23 @@ def main():
     session.configure(bind=engine)
     if not os.path.exists(os.path.join(DEFAULT_PATH, con.URL)):
         Base.metadata.create_all(engine)
+    priority = int(args.priority) if args.priority else 1
     if args.word:
         try:
-            parser = DbParser(session())
+            parser = DbParser(session(), priority)
             word = parser.parse(args.word)
             display(word)
         except ParserError:
             try:
-                parser = BingParser(session())
+                parser = BingParser(session(), priority)
                 parser.parse(args.word)
                 parser = DbParser(session())
                 display(parser.parse(args.word))
             except Exception as er:
-                logging.error(er)
+                logging.info(er)
                 print(colored('Cannot search this word', color='red'))
         except Exception as err:
-            logging.error(err)
+            logging.info(err)
             print(colored('Cannot search this word', color='red'))
 
 
