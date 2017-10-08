@@ -4,6 +4,7 @@ parse a word to word object
 import os
 from bs4 import BeautifulSoup
 from iDict.word import Word
+from iDict.util import query_word
 
 
 class ParserError(Exception):
@@ -24,9 +25,12 @@ class DbParser(Parser):
 
     def parse(self, text):
         try:
-            pass
+            word = query_word(text)
+            if not word:
+                raise ParserError('Cannot look up from database')
+            return word
         except ParserError:
-            self.successor.parse(text)
+            return self.successor.parse(text)
         except Exception as err:
             raise err
 
@@ -51,7 +55,7 @@ class BingParser(Parser):
             for child in tag.children:
                 words.append(child.string)
             sentences.append(''.join(words))
-        return Word(text, ''.join(chinese), ''.join(sentences))
+        return Word(text, os.linesep.join(chinese), os.linesep.join(sentences))
 
     def parse(self, text):
         try:
@@ -67,7 +71,6 @@ class BingParser(Parser):
                 self.successor.parse(text)
         except Exception as err:
             raise err
-
 
 
 def lookup(handler):

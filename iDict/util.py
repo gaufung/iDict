@@ -2,7 +2,6 @@
 util tools for word
 """
 import os
-import sys
 import sqlite3
 import logging
 from iDict.word import Word
@@ -39,14 +38,16 @@ def insert_word(word):
     _create_database()
     conn = sqlite3.connect(os.path.join(DEFAULT_PATH, 'word.db'))
     curs = conn.cursor()
-    curs.execute('SELECT * From Word where name = "%s"' % word.name)
+    curs.execute('Select * From Word where name = "%s"' % word.name)
     res = curs.fetchall()
     if res:
         print(word, 'has existed')
         return
     try:
-        curs.execute('INSERT INTO Word(name, chinese, sentences, priority) values ("%s", "%s", "%s", "%s")'
-                     % (word.name, word.chinese, word.sentences, word.priority))
+        # curs.execute('Insert Into Word(name, chinese, sentences, priority) values ("%s", "%s", "%s", %d )'
+        #              % (word.name, word.chinese, word.sentences, word.priority))
+        curs.execute('Insert Into Word(name, chinese, sentences, priority) values ({0}, {1}, {2}, {3})'
+                     .format(word.name, word.chinese, word.sentences, word.priority))
     except Exception as err:
         print('Cannot insert %s' % word.name)
         raise err
