@@ -1,6 +1,7 @@
 *.pyc
 .idea/
-mange.py
+manage.py
 build/
 dist/
 iDict.egg-info
+app.log

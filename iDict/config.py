@@ -3,8 +3,6 @@ configuration
 """
 import os
 
-# DEFAULT_PATH = os.path.join(os.path.expanduser('~'), '.iDict')
-
 
 class Config(object):
     URL = ''

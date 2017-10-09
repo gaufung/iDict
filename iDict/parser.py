@@ -1,8 +1,9 @@
 """
 parse a word to word object
 """
-import os
+import logging
 from bs4 import BeautifulSoup
+import requests
 from iDict.word import Word, Explain, Sentence
 
 
@@ -19,29 +20,48 @@ class Parser(object):
 
 
 class DbParser(Parser):
-    def __init__(self, session, priority=1):
+    def __init__(self, session, successor=None, priority=1):
         self.session = session
         self.priority = priority
+        self.successor = successor
 
     def parse(self, text):
         word = self.session.query(Word).filter(Word.name == text).first()
-        if not word:
-            raise ParserError('Cannot look up from database')
-        word.priority = self.priority
-        self.session.commit()
-        return word
+        try:
+            if not word:
+                raise ParserError('Cannot look up from database')
+            word.priority = self.priority
+            self.session.commit()
+            return word
+        except ParserError as err:
+            logging.info(err)
+            if self.successor:
+                return self.successor.parse(text)
+            else:
+                raise ParserError('No successor')
 
 
 class BingParser(Parser):
 
     url = 'http://cn.bing.com/dict/search?q={}'
 
-    def __init__(self, session, priority=1):
+    my_headers = {
+        'Accept': 'text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, sdch',
+        'Accept-Language': 'zh-CN, zh;q=0.8',
+        'Upgrade-Insecure-Requests': '1',
+        'Host': 'cn.bing.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) \
+                       Chrome/48.0.2564.116 Safari/537.36'
+    }
+
+    def __init__(self, session, successor, priority=1):
         self.session = session
         self.priority = priority
+        self.successor = successor
 
-    def _parse(self, text):
-        soup = BeautifulSoup(open('search?q={}'.format(text), encoding='utf-8'), 'lxml')
+    def _parse(self, body, text):
+        soup = BeautifulSoup(body, 'lxml')
         definition_tags = soup.find_all(class_='def')
         word = Word(name=text, priority=self.priority)
         if not definition_tags:
@@ -59,19 +79,16 @@ class BingParser(Parser):
 
     def parse(self, text):
         try:
-            query_url = self.url % text
-            os.system('curl -O {}'.format(query_url))
-            if os.path.exists('search?q={}'.format(text)):
-                self._parse(text)
-                os.remove('search?q={}'.format(text))
-        except ParserError:
-            if self.successor is None:
-                raise Exception('Having no handler')
+            query_url = self.url.format(text)
+            response = requests.get(query_url, headers=self.my_headers)
+            if response.status_code == 200:
+                body = response.text
+                self._parse(body, text)
+                return self.successor.parse(text)
             else:
-                self.successor.parse(text)
-        except ValueError as err:
-            if os.path.exists('search?q={}'.format(text)):
-                os.remove('search?q={}'.format(text))
+                raise ParserError('Can not query word from Internet')
+        except ParserError as err:
+            logging.error(err)
             raise err
         except Exception as err:
             raise err
