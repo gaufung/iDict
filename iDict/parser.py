@@ -34,14 +34,14 @@ class DbParser(Parser):
 
 class BingParser(Parser):
 
-    url = 'http://cn.bing.com/dict/search?q={%s}'
+    url = 'http://cn.bing.com/dict/search?q={}'
 
     def __init__(self, session, priority=1):
         self.session = session
         self.priority = priority
 
     def _parse(self, text):
-        soup = BeautifulSoup(open('search?q=%s' % text, encoding='utf-8'), 'lxml')
+        soup = BeautifulSoup(open('search?q={}'.format(text), encoding='utf-8'), 'lxml')
         definition_tags = soup.find_all(class_='def')
         word = Word(name=text, priority=self.priority)
         if not definition_tags:
@@ -60,18 +60,18 @@ class BingParser(Parser):
     def parse(self, text):
         try:
             query_url = self.url % text
-            os.system('curl -O %s' % query_url)
-            if os.path.exists('search?q=%s' % text):
+            os.system('curl -O {}'.format(query_url))
+            if os.path.exists('search?q={}'.format(text)):
                 self._parse(text)
-                os.remove('search?q=%s' % text)
+                os.remove('search?q={}'.format(text))
         except ParserError:
             if self.successor is None:
                 raise Exception('Having no handler')
             else:
                 self.successor.parse(text)
         except ValueError as err:
-            if os.path.exists('search?q=%s' % text):
-                os.remove('search?q=%s' % text)
+            if os.path.exists('search?q={}'.format(text)):
+                os.remove('search?q={}'.format(text))
             raise err
         except Exception as err:
             raise err

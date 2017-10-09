@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from iDict.parser import BingParser, DbParser, ParserError
 from iDict.word import Base
-from iDict.config import config, DEFAULT_PATH
+from iDict.config import config
 
 
 def display(word):
@@ -25,7 +25,9 @@ def display(word):
         print(colored("*", color='red'), colored(sentence.content, color='green'))
 
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.ERROR,
+                    filename='app.log',
+                    format='%(message)s')
 
 
 def main():
@@ -39,7 +41,8 @@ def main():
     engine = create_engine(con.DATABASE_URL)
     session = sessionmaker()
     session.configure(bind=engine)
-    if not os.path.exists(os.path.join(DEFAULT_PATH, con.URL)):
+    if not os.path.exists(os.path.join(con.DEFAULT_PATH, con.URL)):
+        logging.info('Create the database')
         Base.metadata.create_all(engine)
     priority = int(args.priority) if args.priority else 1
     if args.word:
