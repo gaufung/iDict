@@ -14,7 +14,7 @@ from iDict.word import Base
 from iDict.config import config
 
 
-def display(word):
+def display_word(word):
     title = colored(word.name, color='blue')
     print(title)
     print(colored('Definition: ', color='yellow'))
@@ -25,7 +25,7 @@ def display(word):
         print(colored("*", color='red'), colored(sentence.content, color='green'))
 
 
-logging.basicConfig(level=logging.ERROR,
+logging.basicConfig(level=logging.DEBUG,
                     filename='app.log',
                     format='%(message)s')
 
@@ -47,22 +47,10 @@ def main():
     priority = int(args.priority) if args.priority else 1
     if args.word:
         try:
-            parser = DbParser(session(), priority)
+            parser = DbParser(session(), BingParser(session(), DbParser(session(), None, priority), priority), priority)
             word = parser.parse(args.word)
-            display(word)
-        except ParserError:
-            try:
-                parser = BingParser(session(), priority)
-                parser.parse(args.word)
-                parser = DbParser(session())
-                display(parser.parse(args.word))
-            except Exception as er:
-                logging.info(er)
-                print(colored('Cannot search this word', color='red'))
+            display_word(word)
         except Exception as err:
-            logging.info(err)
+            logging.error(err)
             print(colored('Cannot search this word', color='red'))
-
-
-
 

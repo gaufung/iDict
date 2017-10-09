@@ -18,7 +18,7 @@ setup(
     author_email='gaufung@outlook.com',
     description='Bing dictionary to look up',
     install_requires=[
-        'termcolor', 'bs4'
+        'termcolor', 'bs4', 'requests'
     ],
     entry_point={
         'console_script': [
