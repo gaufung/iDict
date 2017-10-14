@@ -4,9 +4,7 @@ test module
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from iDict.word import Word, Explain, Sentence, Base
-from iDict.parser import BingParser, DbParser
-from iDict.config import config
+from iDict import BingParser, DbParser, config, Word, Explain, Sentence, Base
 
 
 class TestWord(unittest.TestCase):
@@ -53,11 +51,16 @@ class TestBingDB(unittest.TestCase):
         Base.metadata.drop_all(self.engine)
 
     def testBingDB(self):
-        parser = BingParser(self.session())
-        parser.parse('fantastic')
-        word = (DbParser(self.session())).parse('fantastic')
+        parser = DbParser(self.session(),
+                          BingParser(self.session(),
+                                     DbParser(self.session(), None, 3),
+                                     3),
+                          3)
+        word = parser.parse('fantastic')
+        print(word)
         self.assertEqual(word.name, 'fantastic')
+        self.assertEqual(word.priority, 3)
         self.assertGreater(len(word.explains), 1)
-        self.assertGreater(len(word.explains), 1)
+        self.assertGreater(len(word.sentences), 1)
 
 

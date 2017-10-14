@@ -20,10 +20,10 @@ class Parser(object):
 
 
 class DbParser(Parser):
-    def __init__(self, session, successor=None, priority=1):
+    def __init__(self, session, **options):
         self.session = session
-        self.priority = priority
-        self.successor = successor
+        self.priority = options.get('priority', 1)
+        self.successor = options.get('successor', None) 
 
     def parse(self, text):
         word = self.session.query(Word).filter(Word.name == text).first()
@@ -64,32 +64,32 @@ class BingParser(Parser):
         soup = BeautifulSoup(body, 'lxml')
         definition_tags = soup.find_all(class_='def')
         word = Word(name=text, priority=self.priority)
-        if not definition_tags:
-            raise ValueError('Can not find this word')
-        for tag in definition_tags:
-            self.session.add(Explain(content=tag.string, word=word))
-        sentence_tags = soup.find_all(class_='sen_en')
-        for tag in sentence_tags:
-            words = []
-            for child in tag.children:
-                words.append(child.string)
-            self.session.add(Sentence(content=''.join(words), word=word))
-        self.session.add(word)
-        self.session.commit()
+        try:
+            if not definition_tags:
+                raise ValueError('Can not find this word')
+            for tag in definition_tags:
+                self.session.add(Explain(content=tag.string, word=word))
+            sentence_tags = soup.find_all(class_='sen_en')
+            for tag in sentence_tags:
+                words = []
+                for child in tag.children:
+                    words.append(child.string)
+                self.session.add(Sentence(content=''.join(words), word=word))
+            self.session.add(word)
+            self.session.commit()
+        except Exception as err:
+            logging.error(err)
+            self.session.rollback()
+        finally:
+            self.session.close()
 
     def parse(self, text):
-        try:
-            query_url = self.url.format(text)
-            response = requests.get(query_url, headers=self.my_headers)
-            if response.status_code == 200:
-                body = response.text
-                self._parse(body, text)
-                return self.successor.parse(text)
-            else:
-                raise ParserError('Can not query word from Internet')
-        except ParserError as err:
-            logging.error(err)
-            raise err
-        except Exception as err:
-            raise err
+        query_url = self.url.format(text)
+        response = requests.get(query_url, headers=self.my_headers)
+        if response.status_code == 200:
+            body = response.text
+            self._parse(body, text)
+            return self.successor.parse(text)
+        else:
+            raise ParserError('Can not query word from Internet')
 

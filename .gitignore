@@ -4,4 +4,4 @@ manage.py
 build/
 dist/
 iDict.egg-info
-app.log
+*.log
